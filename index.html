@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>✈️ KIAMO TAF-METAR</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #7fa3d8 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            padding: 40px;
+        }
+
+        .input-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .input-group label {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .input-group textarea {
+            width: 100%;
+            height: 200px;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.95em;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        .input-group textarea:focus {
+            outline: none;
+            border-color: #2a5298;
+        }
+
+        .button-container {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .verify-btn {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            border: none;
+            padding: 15px 50px;
+            font-size: 1.2em;
+            font-weight: 600;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 15px rgba(42, 82, 152, 0.4);
+        }
+
+        .verify-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(42, 82, 152, 0.6);
+        }
+
+        .verify-btn:active {
+            transform: translateY(0);
+        }
+
+        .error-message {
+            background: #fee;
+            color: #c33;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 4px solid #c33;
+            display: none;
+        }
+
+        .success-message {
+            background: #efe;
+            color: #3a3;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 4px solid #3a3;
+            display: none;
+        }
+
+        .results {
+            display: none;
+        }
+
+        .station-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .station-info h3 {
+            color: #2a5298;
+            font-size: 1.5em;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .metric-card {
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .metric-card h4 {
+            color: #555;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .metric-card .value {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #1565c0;
+        }
+
+        .metric-card .na {
+            font-size: 2em;
+            color: #999;
+        }
+
+        .metric-details {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 2px solid rgba(255, 255, 255, 0.5);
+            font-size: 0.85em;
+            color: #1565c0;
+            text-align: left;
+        }
+
+        .metric-details .detail-row {
+            margin: 5px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .metric-details .detail-label {
+            font-weight: 600;
+        }
+
+        .metric-details .detail-value {
+            font-family: 'Courier New', monospace;
+            background: rgba(255, 255, 255, 0.7);
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+
+        .metric-details .reason {
+            margin-top: 10px;
+            padding: 8px;
+            background: rgba(30, 60, 114, 0.1);
+            border-radius: 5px;
+            font-style: italic;
+            color: #1e3c72;
+        }
+
+        .overall-accuracy {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .overall-accuracy h3 {
+            font-size: 1.3em;
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+
+        .overall-accuracy .value {
+            font-size: 3.5em;
+            font-weight: bold;
+        }
+
+        .compliance-section {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+        }
+
+        .compliance-section h3 {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .compliance-badge {
+            display: inline-block;
+            padding: 20px 40px;
+            border-radius: 50px;
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .compliance-badge.compliant {
+            background: #d4edda;
+            color: #155724;
+            border: 3px solid #28a745;
+        }
+
+        .compliance-badge.non-compliant {
+            background: #f8d7da;
+            color: #721c24;
+            border: 3px solid #dc3545;
+        }
+
+        .compliance-details {
+            text-align: left;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .compliance-details h4 {
+            color: #721c24;
+            margin-bottom: 15px;
+        }
+
+        .compliance-details ul {
+            list-style: none;
+        }
+
+        .compliance-details li {
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #999;
+            font-size: 0.9em;
+        }
+
+        @media (max-width: 768px) {
+            .input-section {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>✈️ KIAMO TAF–METAR</h1>
+            <p>TAF–METAR Parsing & ICAO Accuracy Verification</p>
+        </div>
+
+        <div class="main-content">
+            <div class="error-message" id="errorMessage"></div>
+            <div class="success-message" id="successMessage"></div>
+
+            <div class="input-section">
+                <div class="input-group">
+                    <label for="tafInput">Paste TAF Report</label>
+                    <textarea 
+                        id="tafInput" 
+                        placeholder="TAF DGAA 291100Z 2912/3012 27015KT 9999 FEW020 BKN040..."
+                    ></textarea>
+                </div>
+                <div class="input-group">
+                    <label for="metarInput">Paste METAR Report</label>
+                    <textarea 
+                        id="metarInput" 
+                        placeholder="METAR DGAA 291130Z 28012KT 9999 FEW018 BKN038 28/22 Q1013..."
+                    ></textarea>
+                </div>
+            </div>
+
+            <div class="button-container">
+                <button class="verify-btn" onclick="verifyAccuracy()">Verify Accuracy</button>
+            </div>
+
+            <div class="results" id="results">
+                <div class="station-info" id="stationInfo"></div>
+
+                <h2 style="margin-bottom: 20px; color: #333;">📊 Per-Parameter Accuracy Scores</h2>
+                <div class="metrics-grid" id="metricsGrid"></div>
+
+                <h2 style="margin-bottom: 20px; color: #333;">📈 Overall Accuracy</h2>
+                <div class="overall-accuracy" id="overallAccuracy"></div>
+
+                <div class="compliance-section" id="complianceSection"></div>
+            </div>
+        </div>
+
+        <div class="footer">
+            KIAMO TAF-METAR v1.0 | ICAO-Compliant Forecast Verification
+        </div>
+    </div>
+
+    <script>
+        // Parser Module
+        const Parser = {
+            extractStation(reportText) {
+                const tokens = reportText.split(/\s+/);
+                const icaoPattern = /^[A-Z]{4}$/;
+                
+                for (let i = 0; i < Math.min(2, tokens.length); i++) {
+                    if (icaoPattern.test(tokens[i])) {
+                        return tokens[i];
+                    }
+                }
+                return null;
+            },
+
+            parseWind(reportText) {
+                const windPattern = /\b(\d{3}|VRB)(\d{2,3})(G\d{2,3})?KT\b/;
+                const match = reportText.match(windPattern);
+                
+                if (match) {
+                    const directionStr = match[1];
+                    const speed = parseInt(match[2]);
+                    
+                    let direction = null;
+                    if (directionStr !== 'VRB' && directionStr !== '000') {
+                        direction = parseInt(directionStr);
+                    }
+                    
+                    return { direction, speed };
+                }
+                
+                return { direction: null, speed: null };
+            },
+
+            parseVisibility(reportText) {
+                if (reportText.includes('CAVOK')) {
+                    return 10000;
+                }
+                
+                const visPattern = /\b(\d{4})\b/g;
+                const tokens = reportText.split(/\s+/);
+                
+                for (const token of tokens) {
+                    if (/^\d{4}$/.test(token)) {
+                        const vis = parseInt(token);
+                        if (vis <= 9999 || vis === 10000) {
+                            return vis;
+                        }
+                    }
+                }
+                
+                return null;
+            },
+
+            parseClouds(reportText) {
+                // Check for CAVOK first (visibility >= 10km, no clouds below 5000ft)
+                if (reportText.includes('CAVOK')) {
+                    return { amount: 'CAVOK', height: 5000 };
+                }
+                
+                // Check for NSC/NCD/SKC (no significant cloud)
+                const nscTypes = ['NSC', 'NCD', 'SKC'];
+                for (const nsc of nscTypes) {
+                    if (new RegExp('\\b' + nsc + '\\b').test(reportText)) {
+                        return { amount: nsc, height: 5000 };
+                    }
+                }
+                
+                // Look for cloud groups: FEW020, SCT015, BKN040, OVC100, VV002
+                // Pattern captures cloud amount and height, ignoring CB/TCU cloud types
+                const cloudPattern = /\b(FEW|SCT|BKN|OVC|VV)(\d{3})(?:CB|TCU)?\b/gi;
+                const matches = [...reportText.matchAll(cloudPattern)];
+                
+                console.log('Cloud matches found:', matches);
+                
+                if (matches.length > 0) {
+                    // Find the lowest cloud layer
+                    let lowestLayer = matches[0];
+                    let lowestHeight = parseInt(matches[0][2]);
+                    
+                    for (let i = 1; i < matches.length; i++) {
+                        const currentHeight = parseInt(matches[i][2]);
+                        if (currentHeight < lowestHeight) {
+                            lowestHeight = currentHeight;
+                            lowestLayer = matches[i];
+                        }
+                    }
+                    
+                    console.log('Lowest cloud layer:', lowestLayer[1], 'at', lowestHeight * 100, 'ft');
+                    
+                    return {
+                        amount: lowestLayer[1].toUpperCase(),
+                        height: lowestHeight * 100
+                    };
+                }
+                
+                console.log('No cloud data found');
+                return { amount: null, height: null };
+            },
+
+            parse(reportText) {
+                const wind = this.parseWind(reportText);
+                const visibility = this.parseVisibility(reportText);
+                const clouds = this.parseClouds(reportText);
+                
+                return {
+                    wind_direction: wind.direction,
+                    wind_speed: wind.speed,
+                    visibility: visibility,
+                    cloud_amount: clouds.amount,
+                    cloud_height: clouds.height
+                };
+            }
+        };
+
+        // Scoring Module
+        const Scoring = {
+            scoreWindDirection(tafDir, metarDir) {
+                if (tafDir === null || metarDir === null) {
+                    return { 
+                        score: null, 
+                        reason: 'Wind direction data missing from TAF or METAR',
+                        tafValue: tafDir,
+                        metarValue: metarDir,
+                        difference: null
+                    };
+                }
+                
+                const diff = Math.abs(tafDir - metarDir);
+                const circularDiff = Math.min(diff, 360 - diff);
+                
+                let score, reason;
+                if (circularDiff <= 50) {
+                    score = 100.0;
+                    reason = `Excellent accuracy: Only ${circularDiff}° difference (0-50° = 100%)`;
+                } else if (circularDiff <= 120) {
+                    score = 50.0;
+                    reason = `Moderate accuracy: ${circularDiff}° difference (60-120° = 50%)`;
+                } else {
+                    score = 0.0;
+                    reason = `Poor accuracy: ${circularDiff}° difference exceeds threshold (>120° = 0%)`;
+                }
+                
+                return { score, reason, tafValue: tafDir, metarValue: metarDir, difference: circularDiff };
+            },
+
+            scoreWindSpeed(tafSpeed, metarSpeed) {
+                if (tafSpeed === null || metarSpeed === null) {
+                    return { 
+                        score: null, 
+                        reason: 'Wind speed data missing from TAF or METAR',
+                        tafValue: tafSpeed,
+                        metarValue: metarSpeed,
+                        difference: null
+                    };
+                }
+                
+                const diff = Math.abs(tafSpeed - metarSpeed);
+                
+                let score, reason;
+                if (diff <= 2) {
+                    score = 100.0;
+                    reason = `Excellent accuracy: Only ${diff} knots difference (0-2 kt = 100%)`;
+                } else if (diff <= 5) {
+                    score = 70.0;
+                    reason = `Good accuracy: ${diff} knots difference (3-5 kt = 70%)`;
+                } else if (diff <= 10) {
+                    score = 50.0;
+                    reason = `Moderate accuracy: ${diff} knots difference (6-10 kt = 50%)`;
+                } else if (diff <= 15) {
+                    score = 20.0;
+                    reason = `Below standard: ${diff} knots difference (11-15 kt = 20%)`;
+                } else {
+                    score = 0.0;
+                    reason = `Poor accuracy: ${diff} knots difference exceeds threshold (>15 kt = 0%)`;
+                }
+                
+                return { score, reason, tafValue: tafSpeed, metarValue: metarSpeed, difference: diff };
+            },
+
+            scoreVisibility(tafVis, metarVis) {
+                if (tafVis === null || metarVis === null) {
+                    return { 
+                        score: null, 
+                        reason: 'Visibility data missing from TAF or METAR',
+                        tafValue: tafVis,
+                        metarValue: metarVis,
+                        difference: null
+                    };
+                }
+                
+                const diff = Math.abs(tafVis - metarVis);
+                
+                let score, reason;
+                if (diff <= 500) {
+                    score = 100.0;
+                    reason = `Excellent accuracy: Only ${diff}m difference (0-500m = 100%)`;
+                } else if (diff <= 1000) {
+                    score = 80.0;
+                    reason = `Very good accuracy: ${diff}m difference (600-1000m = 80%)`;
+                } else if (diff <= 4000) {
+                    score = 70.0;
+                    reason = `Good accuracy: ${diff}m difference (1000-4000m = 70%)`;
+                } else if (diff <= 8000) {
+                    score = 30.0;
+                    reason = `Below standard: ${diff}m difference (5000-8000m = 30%)`;
+                } else {
+                    score = 0.0;
+                    reason = `Poor accuracy: ${diff}m difference exceeds threshold (≥9000m = 0%)`;
+                }
+                
+                return { score, reason, tafValue: tafVis, metarValue: metarVis, difference: diff };
+            },
+
+            scoreCloudHeight(tafHeight, metarHeight) {
+                if (tafHeight === null || metarHeight === null) {
+                    return { 
+                        score: null, 
+                        reason: 'Cloud height data missing from TAF or METAR',
+                        tafValue: tafHeight,
+                        metarValue: metarHeight,
+                        difference: null
+                    };
+                }
+                
+                const diff = Math.abs(tafHeight - metarHeight);
+                
+                let score, reason;
+                if (diff <= 500) {
+                    score = 100.0;
+                    reason = `Excellent accuracy: Only ${diff}ft difference (0-500ft = 100%)`;
+                } else if (diff <= 1000) {
+                    score = 70.0;
+                    reason = `Good accuracy: ${diff}ft difference (600-1000ft = 70%)`;
+                } else if (diff <= 2000) {
+                    score = 50.0;
+                    reason = `Moderate accuracy: ${diff}ft difference (1100-2000ft = 50%)`;
+                } else if (diff <= 3000) {
+                    score = 10.0;
+                    reason = `Below standard: ${diff}ft difference (2100-3000ft = 10%)`;
+                } else {
+                    score = 0.0;
+                    reason = `Poor accuracy: ${diff}ft difference exceeds threshold (>3000ft = 0%)`;
+                }
+                
+                return { score, reason, tafValue: tafHeight, metarValue: metarHeight, difference: diff };
+            },
+
+            scoreCloudAmount(tafAmount, metarAmount) {
+                if (tafAmount === null || metarAmount === null) {
+                    return { 
+                        score: null, 
+                        reason: 'Cloud amount data missing from TAF or METAR',
+                        tafValue: tafAmount,
+                        metarValue: metarAmount,
+                        difference: null
+                    };
+                }
+                
+                const clearFewSct = ['NSC', 'NCD', 'SKC', 'FEW', 'SCT', 'CAVOK'];
+                const brokenOvercast = ['BKN', 'OVC'];
+                
+                let score, reason;
+                
+                if (clearFewSct.includes(tafAmount) && clearFewSct.includes(metarAmount)) {
+                    score = 100.0;
+                    reason = `Perfect match: Both forecast and observed show clear/few/scattered clouds`;
+                } else if (brokenOvercast.includes(tafAmount) && brokenOvercast.includes(metarAmount)) {
+                    score = 100.0;
+                    reason = `Perfect match: Both forecast and observed show broken/overcast clouds`;
+                } else if (clearFewSct.includes(tafAmount) && brokenOvercast.includes(metarAmount)) {
+                    score = 10.0;
+                    reason = `Significant under-forecast: Predicted clear/scattered but observed broken/overcast`;
+                } else if (brokenOvercast.includes(tafAmount) && clearFewSct.includes(metarAmount)) {
+                    score = 30.0;
+                    reason = `Moderate over-forecast: Predicted broken/overcast but observed clear/scattered`;
+                } else if (tafAmount === 'VV' || metarAmount === 'VV') {
+                    if (brokenOvercast.includes(tafAmount) || brokenOvercast.includes(metarAmount)) {
+                        score = 100.0;
+                        reason = `Good match: Vertical visibility treated as overcast condition`;
+                    } else {
+                        score = 30.0;
+                        reason = `Mismatch: Vertical visibility vs clear conditions`;
+                    }
+                } else {
+                    score = 0.0;
+                    reason = `No match: Incompatible cloud amount categories`;
+                }
+                
+                return { score, reason, tafValue: tafAmount, metarValue: metarAmount, difference: null };
+            },
+
+            computeScores(tafData, metarData) {
+                return {
+                    wind_direction: this.scoreWindDirection(tafData.wind_direction, metarData.wind_direction),
+                    wind_speed: this.scoreWindSpeed(tafData.wind_speed, metarData.wind_speed),
+                    visibility: this.scoreVisibility(tafData.visibility, metarData.visibility),
+                    cloud_amount: this.scoreCloudAmount(tafData.cloud_amount, metarData.cloud_amount),
+                    cloud_height: this.scoreCloudHeight(tafData.cloud_height, metarData.cloud_height)
+                };
+            }
+        };
+
+        // Verification Module
+        const Verification = {
+            computeOverallAccuracy(scores) {
+                const validScores = Object.values(scores).filter(s => s.score !== null).map(s => s.score);
+                if (validScores.length === 0) return 0.0;
+                return validScores.reduce((a, b) => a + b, 0) / validScores.length;
+            },
+
+            verifyICAOCompliance(scores) {
+                const thresholds = {
+                    wind_direction: 80.0,
+                    wind_speed: 80.0,
+                    visibility: 80.0,
+                    cloud_amount: 70.0,
+                    cloud_height: 70.0
+                };
+
+                const complianceDetails = {};
+                let allPassed = true;
+
+                for (const [param, threshold] of Object.entries(thresholds)) {
+                    const scoreData = scores[param];
+                    const score = scoreData.score;
+                    const passed = score !== null && score >= threshold;
+                    
+                    if (!passed) allPassed = false;
+                    
+                    complianceDetails[param] = {
+                        score: score !== null ? score : 0.0,
+                        threshold: threshold,
+                        passed: passed,
+                        reason: scoreData.reason
+                    };
+                }
+
+                return { isCompliant: allPassed, details: complianceDetails };
+            }
+        };
+
+        // UI Functions
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = '❌ ' + message;
+            errorDiv.style.display = 'block';
+            document.getElementById('successMessage').style.display = 'none';
+            document.getElementById('results').style.display = 'none';
+        }
+
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = '✅ ' + message;
+            successDiv.style.display = 'block';
+            document.getElementById('errorMessage').style.display = 'none';
+        }
+
+        function displayResults(station, scores, overallAccuracy, compliance) {
+            document.getElementById('results').style.display = 'block';
+            
+            // Station info
+            document.getElementById('stationInfo').innerHTML = `
+                <h3>Detected Station: ${station}</h3>
+            `;
+
+            // Metrics grid
+            const metricsGrid = document.getElementById('metricsGrid');
+            const metrics = [
+                { key: 'wind_direction', label: 'Wind Direction', unit: '°' },
+                { key: 'wind_speed', label: 'Wind Speed', unit: ' kt' },
+                { key: 'visibility', label: 'Visibility', unit: ' m' },
+                { key: 'cloud_amount', label: 'Cloud Amount', unit: '' },
+                { key: 'cloud_height', label: 'Cloud Height', unit: ' ft' }
+            ];
+
+            metricsGrid.innerHTML = metrics.map(metric => {
+                const scoreData = scores[metric.key];
+                const score = scoreData.score;
+                
+                let valueHtml;
+                if (score !== null) {
+                    valueHtml = `<div class="value">${score.toFixed(1)}%</div>`;
+                } else {
+                    valueHtml = `<div class="na">N/A</div>`;
+                }
+                
+                // Build details section
+                let detailsHtml = '';
+                if (score !== null && scoreData.tafValue !== null && scoreData.metarValue !== null) {
+                    detailsHtml = `
+                        <div class="metric-details">
+                            <div class="detail-row">
+                                <span class="detail-label">TAF:</span>
+                                <span class="detail-value">${scoreData.tafValue}${metric.unit}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">METAR:</span>
+                                <span class="detail-value">${scoreData.metarValue}${metric.unit}</span>
+                            </div>
+                            ${scoreData.difference !== null ? `
+                            <div class="detail-row">
+                                <span class="detail-label">Difference:</span>
+                                <span class="detail-value">${scoreData.difference}${metric.unit}</span>
+                            </div>
+                            ` : ''}
+                            <div class="reason">${scoreData.reason}</div>
+                        </div>
+                    `;
+                } else {
+                    detailsHtml = `
+                        <div class="metric-details">
+                            <div class="reason">${scoreData.reason}</div>
+                        </div>
+                    `;
+                }
+                
+                return `
+                    <div class="metric-card">
+                        <h4>${metric.label}</h4>
+                        ${valueHtml}
+                        ${detailsHtml}
+                    </div>
+                `;
+            }).join('');
+
+            // Overall accuracy
+            document.getElementById('overallAccuracy').innerHTML = `
+                <h3>Average Score</h3>
+                <div class="value">${overallAccuracy.toFixed(1)}%</div>
+            `;
+
+            // Compliance section
+            const complianceSection = document.getElementById('complianceSection');
+            const badgeClass = compliance.isCompliant ? 'compliant' : 'non-compliant';
+            const badgeText = compliance.isCompliant ? '✅ ICAO COMPLIANT' : '❌ NON-COMPLIANT';
+            
+            let detailsHtml = '';
+            if (!compliance.isCompliant) {
+                const failedParams = Object.entries(compliance.details)
+                    .filter(([_, details]) => !details.passed)
+                    .map(([param, details]) => {
+                        const label = param.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                        return `
+                            <li>
+                                <strong>${label}:</strong> ${details.score.toFixed(1)}% 
+                                (Required: ≥${details.threshold}%)
+                                <br><em style="color: #666; font-size: 0.9em;">${details.reason}</em>
+                            </li>
+                        `;
+                    });
+                
+                detailsHtml = `
+                    <div class="compliance-details">
+                        <h4>The following parameters failed ICAO thresholds:</h4>
+                        <ul>${failedParams.join('')}</ul>
+                    </div>
+                `;
+            } else {
+                detailsHtml = `
+                    <p style="color: #155724; margin-top: 10px;">
+                        All parameters meet their respective ICAO minimum thresholds.
+                    </p>
+                `;
+            }
+
+            complianceSection.innerHTML = `
+                <h3>🔍 ICAO Compliance Status</h3>
+                <div class="compliance-badge ${badgeClass}">${badgeText}</div>
+                ${detailsHtml}
+            `;
+
+            // Scroll to results
+            document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function verifyAccuracy() {
+            const tafText = document.getElementById('tafInput').value.trim().toUpperCase();
+            const metarText = document.getElementById('metarInput').value.trim().toUpperCase();
+
+            // Validation
+            if (!tafText || !metarText) {
+                showError('Please provide both TAF and METAR reports.');
+                return;
+            }
+
+            // Extract stations
+            const tafStation = Parser.extractStation(tafText);
+            const metarStation = Parser.extractStation(metarText);
+
+            if (!tafStation) {
+                showError('Could not detect ICAO station from TAF report.');
+                return;
+            }
+
+            if (!metarStation) {
+                showError('Could not detect ICAO station from METAR report.');
+                return;
+            }
+
+            if (tafStation !== metarStation) {
+                showError(`Station mismatch! TAF station: ${tafStation}, METAR station: ${metarStation}`);
+                return;
+            }
+
+            showSuccess(`Detected Station: ${tafStation}`);
+
+            // Parse reports
+            const tafData = Parser.parse(tafText);
+            const metarData = Parser.parse(metarText);
+            
+            // Debug logging
+            console.log('TAF Data:', tafData);
+            console.log('METAR Data:', metarData);
+
+            // Compute scores
+            const scores = Scoring.computeScores(tafData, metarData);
+            console.log('Computed Scores:', scores);
+            const overallAccuracy = Verification.computeOverallAccuracy(scores);
+            const compliance = Verification.verifyICAOCompliance(scores);
+
+            // Display results
+            displayResults(tafStation, scores, overallAccuracy, compliance);
+        }
+
+        // Allow Enter key to trigger verification
+        document.addEventListener('DOMContentLoaded', () => {
+            const inputs = [document.getElementById('tafInput'), document.getElementById('metarInput')];
+            inputs.forEach(input => {
+                input.addEventListener('keydown', (e) => {
+                    if (e.ctrlKey && e.key === 'Enter') {
+                        verifyAccuracy();
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
